@@ -15,9 +15,9 @@ The codebase already has early foundations for host sign-in, quiz authoring, PIN
 
 ## Development phases
 
-1. **Landing page — current phase:** Build and refine the public landing page and its branding. This phase is limited to the landing experience.
-2. **Admin — next phase:** Develop the admin dashboard and expand tools for creating and managing quizzes, exams, questions, settings, and publishing.
-3. **Users — final phase:** Complete the player-facing experience, including joining and taking quizzes or exams, and viewing results.
+1. **Platform foundations:** The public landing page, host accounts, quiz authoring, study-file imports, PIN-based lobbies, and player registration are in place.
+2. **Next feature — exams, avatars, and leaderboards:** Build a complete exam creation and management flow, let players choose avatars, and add leaderboards for quiz and exam sessions.
+3. **Later work — live gameplay and results:** Implement synchronized live sessions, scoring, results, exports, and performance testing.
 
 ## Run with XAMPP
 
@@ -46,4 +46,4 @@ The web server must be configured to serve this project at `/BootUp`; if you use
 
 ## Existing implementation
 
-The existing quiz editor supports multiple-choice, true/false, and fill-in-the-blank questions. Hosts can publish quizzes and open PIN-based lobbies, and players can register a name to join. The admin and user phases above still describe the planned development sequence; these early features do not mean those phases are complete. Avatar customization, live player-count updates, WebSocket hosting, synchronized gameplay/scoring/leaderboards, result exports, and load testing are not implemented yet; the 50-player acceptance criteria are not yet met.
+The existing quiz editor supports multiple-choice, true/false, and fill-in-the-blank questions. Hosts can publish quizzes and open PIN-based lobbies, and players can register a name to join. Full exam creation, player avatars, and leaderboards are planned as the next feature and are not implemented yet. Live player-count updates, WebSocket hosting, synchronized gameplay and scoring, result exports, and load testing are also pending; the 50-player acceptance criteria are not yet met.
