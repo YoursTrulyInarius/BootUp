@@ -6,6 +6,9 @@
     const count = document.getElementById('question-count');
     const message = document.getElementById('editor-message');
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
+    const sourceFile = document.getElementById('source-file');
+    const draftButton = document.getElementById('draft-from-file');
+    const importStatus = document.getElementById('import-status');
 
     const make = (tag, className, text) => {
         const element = document.createElement(tag);
@@ -24,7 +27,8 @@
         const element = document.createElement('input');
         element.type = type;
         element.value = value ?? '';
-        if (className) element.className = className;
+        const frameworkClass = type === 'checkbox' || type === 'radio' ? '' : 'form-control';
+        element.className = [frameworkClass, className].filter(Boolean).join(' ');
         return element;
     }
 
@@ -37,6 +41,7 @@
             const title = make('div', 'question-card-title');
             title.append(make('span', 'question-index', String(index + 1).padStart(2, '0')), make('strong', '', `Question ${index + 1}`));
             const typeSelect = document.createElement('select');
+            typeSelect.className = 'form-select';
             typeSelect.setAttribute('aria-label', `Question ${index + 1} type`);
             [
                 ['multiple_choice', 'Multiple choice'],
@@ -71,6 +76,7 @@
             card.append(top);
 
             const text = document.createElement('textarea');
+            text.className = 'form-control';
             text.rows = 2;
             text.maxLength = 1000;
             text.placeholder = 'Write your question here…';
@@ -122,6 +128,7 @@
                 }
             } else if (question.question_type === 'true_false') {
                 const answer = document.createElement('select');
+                answer.className = 'form-select';
                 [['true', 'True'], ['false', 'False']].forEach(([value, label]) => {
                     const option = document.createElement('option');
                     option.value = value;
@@ -133,6 +140,7 @@
                 answers.append(field('Correct answer', answer));
             } else {
                 const accepted = document.createElement('textarea');
+                accepted.className = 'form-control';
                 accepted.rows = 3;
                 accepted.placeholder = 'Enter accepted answers, one per line';
                 accepted.value = (question.accepted_answers || []).join('\n');
@@ -167,6 +175,7 @@
                 field('Points', points, 'setting-field'),
             );
             const explanation = document.createElement('textarea');
+            explanation.className = 'form-control';
             explanation.rows = 2;
             explanation.maxLength = 2000;
             explanation.placeholder = 'Optional: explain why the answer is correct';
@@ -184,6 +193,122 @@
         message.hidden = false;
         message.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+
+    function showImportStatus(text, isError) {
+        importStatus.textContent = text;
+        importStatus.className = `notice ${isError ? 'notice-error' : 'notice-success'}`;
+        importStatus.hidden = false;
+    }
+
+    let isImporting = false;
+
+    function updateDraftButton() {
+        const file = sourceFile.files[0];
+        if (isImporting || !file || questions.length >= 100 || !window.bootUpFileImporter) {
+            draftButton.disabled = true;
+            return;
+        }
+        try {
+            window.bootUpFileImporter.validateFile(file);
+            draftButton.disabled = false;
+        } catch (error) {
+            draftButton.disabled = true;
+        }
+    }
+
+    async function saveSourceFile(file) {
+        const formData = new FormData();
+        formData.append('source_file', file);
+        const response = await fetch('/BootUp/api/source-files.php', {
+            method: 'POST',
+            headers: { 'X-CSRF-Token': csrf },
+            body: formData,
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'The source file could not be saved.');
+    }
+
+    async function draftQuestionsFromFile(file, saveToLibrary) {
+        const remaining = 100 - questions.length;
+        if (remaining <= 0) throw new Error('This quiz already has the maximum of 100 questions.');
+
+        const text = await window.bootUpFileImporter.extractText(file);
+        const basePoints = Number(document.getElementById('quiz-base-points').value);
+        const drafts = window.bootUpFileImporter.draftQuestions(text, basePoints, remaining);
+        if (!drafts.length) {
+            throw new Error('No draft questions could be made from this text. Try a file with longer statements or definitions.');
+        }
+        if (saveToLibrary) {
+            showImportStatus(`Adding ${file.name} to your private library…`, false);
+            await saveSourceFile(file);
+        }
+
+        questions.push(...drafts);
+        render();
+        const title = document.getElementById('quiz-title');
+        if (!title.value.trim()) {
+            title.value = file.name.replace(/\.[^.]+$/, '').slice(0, 120);
+        }
+        const savedMessage = saveToLibrary ? ' The source file was saved to your library.' : '';
+        showImportStatus(`Added ${drafts.length} editable draft${drafts.length === 1 ? '' : 's'} from ${file.name}.${savedMessage} Review the questions and answers before saving.`, false);
+        list.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    async function loadStoredSource(source) {
+        isImporting = true;
+        draftButton.disabled = true;
+        draftButton.textContent = 'Reading saved file…';
+        showImportStatus(`Loading ${source.name} from your private library…`, false);
+        try {
+            const response = await fetch(`/BootUp/api/source-file.php?id=${encodeURIComponent(source.id)}`);
+            if (!response.ok) {
+                const result = await response.json();
+                throw new Error(result.error || 'The saved source file could not be opened.');
+            }
+            const file = new File([await response.blob()], source.name);
+            await draftQuestionsFromFile(file, false);
+        } catch (error) {
+            showImportStatus(error.message || 'The saved source file could not be opened.', true);
+        } finally {
+            isImporting = false;
+            draftButton.textContent = 'Draft questions';
+            updateDraftButton();
+        }
+    }
+
+    sourceFile.addEventListener('change', () => {
+        importStatus.hidden = true;
+        const file = sourceFile.files[0];
+        if (!file) {
+            updateDraftButton();
+            return;
+        }
+        try {
+            window.bootUpFileImporter.validateFile(file);
+            if (questions.length >= 100) throw new Error('This quiz already has the maximum of 100 questions.');
+            showImportStatus(`Ready to draft questions from ${file.name}.`, false);
+        } catch (error) {
+            showImportStatus(error.message || 'This file cannot be imported.', true);
+        }
+        updateDraftButton();
+    });
+
+    draftButton.addEventListener('click', async () => {
+        const file = sourceFile.files[0];
+        if (!file || !window.bootUpFileImporter || isImporting) return;
+        isImporting = true;
+        draftButton.disabled = true;
+        draftButton.textContent = 'Reading file…';
+        try {
+            await draftQuestionsFromFile(file, true);
+        } catch (error) {
+            showImportStatus(error.message || 'The file could not be read.', true);
+        } finally {
+            isImporting = false;
+            draftButton.textContent = 'Draft questions';
+            updateDraftButton();
+        }
+    });
 
     function collectQuiz() {
         return {
@@ -260,7 +385,7 @@
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error || 'The quiz could not be deleted.');
-                location.href = '/BootUp/admin/quizzes.php';
+                location.href = '/BootUp/admin/quizzes.php?view=quizzes';
             } catch (error) {
                 showMessage(error.message || 'The quiz could not be deleted.', true);
                 deleteButton.disabled = false;
@@ -269,4 +394,5 @@
     }
 
     render();
+    if (initial.sourceFile) loadStoredSource(initial.sourceFile);
 })();

@@ -9,15 +9,19 @@ require __DIR__ . '/config/bootstrap.php';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= h(csrf_token()) ?>">
     <title>Join a game — BootUp</title>
+    <script src="/BootUp/assets/js/theme.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-yEPZ7jP9S0QKiUQ0m3jjsO4ProIW7wvR9gXkI7JOGa2XVsw53Yke2bsdkBbjmmiX" crossorigin="anonymous">
     <link rel="stylesheet" href="/BootUp/assets/css/app.css">
     <script defer src="/BootUp/assets/js/join-game.js"></script>
 </head>
 <body class="home-page">
     <header class="site-header home-header">
         <a class="brand" href="/BootUp/">BOOTUP<span>.</span></a>
-        <a class="host-link" href="/BootUp/admin/login.php">Hosting a quiz? <strong>Host sign in <span aria-hidden="true">↗</span></strong></a>
+        <div class="home-header-actions d-flex align-items-center">
+            <a class="host-link" href="/BootUp/admin/login.php"><span class="home-host-preface">Hosting a quiz?</span> <strong>Host sign in <span aria-hidden="true">↗</span></strong></a>
+        </div>
     </header>
-    <main class="home-layout">
+    <main class="home-layout container-fluid">
         <section class="home-copy">
             <div class="home-kicker"><span class="home-kicker-dot"></span> THE MULTIPLAYER QUIZ ARENA</div>
             <h1>Bring your<br>brain <span>game.</span></h1>
@@ -25,7 +29,7 @@ require __DIR__ . '/config/bootstrap.php';
             <form id="join-form" class="home-pin-form" novalidate>
                 <label for="game-code">ENTER YOUR GAME PIN</label>
                 <div class="home-pin-row">
-                    <input id="game-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+                    <input class="form-control" id="game-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
                            pattern="[0-9]{6}" maxlength="6" placeholder="000000" aria-describedby="code-help join-message" required>
                     <button class="button button-primary home-join-button" id="join-button" type="submit" disabled>
                         Join game <span aria-hidden="true">→</span>

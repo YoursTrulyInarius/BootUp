@@ -12,6 +12,20 @@ CREATE TABLE IF NOT EXISTS admins (
     UNIQUE KEY uq_admins_username (username)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS source_files (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    admin_id BIGINT UNSIGNED NOT NULL,
+    original_name VARCHAR(255) NOT NULL,
+    extension VARCHAR(8) NOT NULL,
+    storage_name VARCHAR(64) NOT NULL,
+    size_bytes BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_source_files_storage_name (storage_name),
+    KEY idx_source_files_admin_created (admin_id, created_at),
+    CONSTRAINT fk_source_files_admin FOREIGN KEY (admin_id) REFERENCES admins (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS quizzes (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     admin_id BIGINT UNSIGNED NOT NULL,
